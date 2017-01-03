@@ -1,0 +1,14 @@
+version: '2'
+
+services:
+    database:
+        build: "~/Documents/Docker/ayamelDBDockerfile/."
+        image: yvideodb
+        ports:
+         - "3306:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: "test"
+            MYSQL_DATABASE: yvideodb
+    yvideo:
+        build: "~/Documents/Docker/AyamelDockerfile/."
+        image: yvideo
