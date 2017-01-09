@@ -12,3 +12,4 @@ services:
     yvideo:
         build: "~/Documents/Docker/AyamelDockerfile/."
         image: yvideo
+#        command: bash -c "/Ayamel-Examples/run.sh"
