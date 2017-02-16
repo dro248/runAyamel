@@ -10,6 +10,10 @@ services:
             MYSQL_ROOT_PASSWORD: "test"
             MYSQL_DATABASE: yvideodb
     yvideo:
+        depends_on:
+         - database
         build: "~/Documents/Docker/AyamelDockerfile/."
         image: yvideo
+        environment:
+            YVIDEODB: database:3306
 #        command: bash -c "/Ayamel-Examples/run.sh"
