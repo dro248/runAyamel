@@ -17,4 +17,4 @@ services:
         environment:
             YVIDEODB: database:3306
                 
-        command: ["/Ayamel-Examples/run.sh"]
+        command: ["./runApp.sh"]
