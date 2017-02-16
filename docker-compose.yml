@@ -2,7 +2,7 @@ version: '2'
 
 services:
     database:
-        build: "~/Documents/Docker/ayamelDBDockerfile/."
+        build: "~/Docker/ayamelDBDockerfile/."
         image: yvideodb
         ports:
          - "3306:3306"
@@ -12,7 +12,7 @@ services:
     yvideo:
         depends_on:
          - database
-        build: "~/Documents/Docker/AyamelDockerfile/."
+        build: "~/Docker/AyamelDockerfile/."
         image: yvideo
         environment:
             YVIDEODB: database:3306
