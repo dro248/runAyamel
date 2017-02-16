@@ -16,4 +16,5 @@ services:
         image: yvideo
         environment:
             YVIDEODB: database:3306
-#        command: bash -c "/Ayamel-Examples/run.sh"
+                
+        command: ["/Ayamel-Examples/run.sh"]
