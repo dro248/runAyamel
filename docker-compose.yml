@@ -17,4 +17,4 @@ services:
         environment:
             YVIDEODB: database:3306
                 
-        command: ["./runApp.sh"]
+        # command: ["./runApp.sh"]
