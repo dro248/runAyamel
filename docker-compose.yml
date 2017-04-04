@@ -14,8 +14,13 @@ services:
          - database
         build: "../AyamelDockerfile/."
         image: yvideo
+        volumes:
+         - /home/david/Documents/GitHub/yvideo:/yvideo
         stdin_open: true
         environment:
             YVIDEODB: database:3306
                 
-        command: ["./runApp.sh"]
+#        command: ["./runApp.sh"]
+
+volumes:
+    yvideo:
