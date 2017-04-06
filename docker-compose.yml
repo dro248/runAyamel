@@ -15,8 +15,8 @@ services:
         build: "../AyamelDockerfile/."
         image: yvideo
         volumes:
-         - /home/{{USER}}/Documents/GitHub/Ayamel:/Ayamel
-         - /var/www/html:/var/www/html
+         - {{APP}}:/Ayamel
+         - {{DEPS}}:/var/www/html
         stdin_open: true
         environment:
             YVIDEODB: database:3306
