@@ -3,11 +3,11 @@ version: '3'
 services:
     yvideo:
         volumes:
-         - /home/erra/git/Ayamel:/Ayamel
-         - /home/erra/git/Ayamel.js:/var/www/html/Ayamel.js
-         - /home/erra/git/EditorWidgets:/var/www/html/EditorWidgets
-         - /home/erra/git/subtitle-timeline-editor:/var/www/html/subtitle-timeline-editor
-         - /home/erra/git/TimedText:/var/www/html/TimedText
+         - {{Ayamel}}:/Ayamel
+         - {{Ayamel.js}}:/var/www/html/Ayamel.js
+         - {{EditorWidgets}}:/var/www/html/EditorWidgets
+         - {{subtitle-timeline-editor}}:/var/www/html/subtitle-timeline-editor
+         - {{TimedText}}:/var/www/html/TimedText
         stdin_open: true
                 
         command: ["sbt", "run"]
