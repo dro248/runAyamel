@@ -1,7 +1,13 @@
 version: '3'
 
 services:
-   yvideo:
-                
+    yvideo:
+        depends_on:
+         - database
+        build: "yvideo/"
+        image: yvideo
+        environment:
+            YVIDEODB: database:3306
+
         command: bash -c "sbt clean stage && target/universal/stage/bin/ayamelexamples"
 

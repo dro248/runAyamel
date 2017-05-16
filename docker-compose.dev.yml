@@ -2,6 +2,12 @@ version: '3'
 
 services:
     yvideo:
+        depends_on:
+         - database
+        build: "yvideo/"
+        image: yvideo
+        environment:
+            YVIDEODB: database:3306
         volumes:
          - {{Ayamel}}:/Ayamel
          - {{Ayamel.js}}:/var/www/html/Ayamel.js

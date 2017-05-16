@@ -9,11 +9,4 @@ services:
         environment:
             MYSQL_ROOT_PASSWORD: "test"
             MYSQL_DATABASE: yvideodb
-    yvideo:
-        depends_on:
-         - database
-        build: "yvideo/"
-        image: yvideo
-        environment:
-            YVIDEODB: database:3306
 
