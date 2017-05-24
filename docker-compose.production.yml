@@ -4,7 +4,10 @@ services:
     yvideo:
         depends_on:
          - database
-        build: "yvideo/"
+        build:
+            context: yvideo_prod
+            args:
+                sbt_version: 0.13.8
         image: yvideo
         environment:
             YVIDEODB: database:3306
