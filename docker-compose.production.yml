@@ -12,4 +12,9 @@ services:
         image: yvideo
 
         command: bash -c "sbt clean stage && target/universal/stage/bin/ayamelexamples"
+    lamp:
+        build:
+            context: production
+            dockerfile: Lamp
+        image: lamp:production
 

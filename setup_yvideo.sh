@@ -1,4 +1,4 @@
-#o/bin/bash
+#/bin/bash
 
 default=""
 force_clone=""
@@ -17,8 +17,7 @@ test_compose_file="docker-compose.test.yml"
 
 declare -A repos # Associative array! :) used in the compose_dev function
 repos=([Ayamel]="" [Ayamel.js]="" [EditorWidgets]="" [subtitle-timeline-editor]="" [TimedText]="")
-remotes=(https://github.com/byu-odh/Ayamel
-        https://github.com/byu-odh/Ayamel.js
+remotes=(https://github.com/byu-odh/Ayamel https://github.com/byu-odh/Ayamel.js
         https://github.com/byu-odh/EditorWidgets
         https://github.com/byu-odh/subtitle-timeline-editor
         https://github.com/byu-odh/TimedText)
@@ -192,10 +191,6 @@ cleanup () {
 }
 
 setup () {
-    if [[ -n "$remove" ]]; then
-        remove_containers
-    fi
-
     # Turn off any other mysql database
     if [[ -n $(pgrep mysql) ]]; then
         echo "Making space for database..."
@@ -234,6 +229,7 @@ run_docker_compose () {
 }
 
 options "$@"
+[[ -n "$remove" ]] && remove_containers
 [[ -n "$compose_override_file" ]] && setup && run_docker_compose
 [[ -n "$clean" ]]                 && cleanup
 
