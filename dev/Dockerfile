@@ -1,5 +1,4 @@
 # Building the yvideo image from a Dockerfile
-FROM tutum/lamp:latest
 FROM java
 
 # Get sbt

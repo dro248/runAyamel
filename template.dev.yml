@@ -4,7 +4,7 @@ services:
     yvideo:
         depends_on:
          - database
-        build: "yvideo_dev/"
+        build: dev
         image: yvideo
         environment:
             YVIDEODB: database:3306

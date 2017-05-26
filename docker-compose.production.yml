@@ -4,13 +4,12 @@ services:
     yvideo:
         depends_on:
          - database
+         - lamp
         build:
-            context: yvideo_prod
+            context: production
             args:
                 sbt_version: 0.13.8
         image: yvideo
-        environment:
-            YVIDEODB: database:3306
 
         command: bash -c "sbt clean stage && target/universal/stage/bin/ayamelexamples"
 

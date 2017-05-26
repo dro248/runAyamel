@@ -2,7 +2,7 @@ version: '3'
 
 services:
     database:
-        build: "db/"
+        build: db
         image: yvideodb
         ports:
          - "3306:3306"
