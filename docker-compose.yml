@@ -9,8 +9,4 @@ services:
         environment:
             MYSQL_ROOT_PASSWORD: "test"
             MYSQL_DATABASE: yvideodb
-    lamp:
-        ports:
-         - "80:80"
-
 

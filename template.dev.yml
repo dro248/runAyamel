@@ -7,21 +7,18 @@ services:
          - lamp
         build: dev
         image: yvideo
-        environment:
-            YVIDEODB: database:3306
         volumes:
          - ${Ayamel}:/Ayamel
         stdin_open: true
-                
         command: ["sbt", "${dev_command}"]
+
     lamp:
         image: tutum/lamp:latest
         volumes:
-         - ${Ayamel.js}:/app/Ayamel.js
-         - ${subtitle-timeline-editor}:/app/subtitle-timeline-editor
+         - ${Ayamel_js}:/app/Ayamel.js
+         - ${subtitle_timeline_editor}:/app/subtitle-timeline-editor
          - ${TimedText}:/app/TimedText
          - ${EditorWidgets}:/app/EditorWidgets
-
 
 volumes:
     yvideo:

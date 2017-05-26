@@ -4,17 +4,15 @@ services:
     yvideo:
         depends_on:
          - database
-         - lamp
         build:
             context: production
             args:
                 sbt_version: 0.13.8
+            dockerfile: Dockerfile-Play
         image: yvideo
+        ports:
+         - "80:80"
+         - "9000:9004"
 
         command: bash -c "sbt clean stage && target/universal/stage/bin/ayamelexamples"
-    lamp:
-        build:
-            context: production
-            dockerfile: Lamp
-        image: lamp:production
 
