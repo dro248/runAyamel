@@ -10,17 +10,19 @@ test_local=""
 ayamel_dir=""
 project_name="runayamel"
 git_dir=${GITDIR:-~/Documents/GitHub}
-compose_override_file=""
-dev_compose_file="docker-compose.dev.yml"
+scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
+compose_override_file="" dev_compose_file="docker-compose.dev.yml"
 production_compose_file="docker-compose.production.yml"
 test_compose_file="docker-compose.test.yml"
 
 declare -A repos # Associative array! :) used in the compose_dev function
 repos=([Ayamel]="" [Ayamel.js]="" [EditorWidgets]="" [subtitle-timeline-editor]="" [TimedText]="")
-remotes=(https://github.com/byu-odh/Ayamel https://github.com/byu-odh/Ayamel.js
+ayamel_remote=(https://github.com/byu-odh/Ayamel)
+dependencies_remotes=(https://github.com/byu-odh/Ayamel.js
         https://github.com/byu-odh/EditorWidgets
         https://github.com/byu-odh/subtitle-timeline-editor
         https://github.com/byu-odh/TimedText)
+remotes=("${ayamel_remote[@]}" "${dependencies_remotes[@]}")
 
 usage () {
     echo 'Optional Params:'
@@ -91,6 +93,8 @@ options () {
         elif [[ "$opt" = "--clean" ]] || [[ "$opt" = "-c" ]];
         then
             clean=true
+        else
+            echo "Argument: [$opt] not recognized."
         fi
     done
 
@@ -155,11 +159,14 @@ compose_test () {
     done
 }
 
+# does a shallow clone with only 1 commit on the master branch for all repositories
 compose_production () {
-    # TODO: get the correct copy of the ayamel sql file for production
-    for repo in "${remotes[@]}"; do
-        git clone -b master --single-branch "$repo" production/$(basename $repo) &> /dev/null
+    # clone the dependencies into the lamp folder
+    for repo in "${dependencies_remotes[@]}"; do
+        git clone -b master --depth 1 "$repo" lamp/$(basename $repo) &> /dev/null
     done
+    # clone the ayamel branch into the production folder
+    git clone -b master --depth 1 "$ayamel_remote" production/$(basename $repo) &> /dev/null
 }
 
 # arg 1 is one of [ production, dev, test ]
@@ -175,6 +182,10 @@ prod_cleanup () {
     rm -rf "${!repos[@]}"
     rm -f application.conf
     cd ../
+    cd lamp
+    rm -rf "${!repos[@]}"
+    git checkout -- ayamel.sql
+    cd ..
 }
 
 dev_cleanup () {
@@ -214,7 +225,18 @@ setup () {
             exit
         fi
 
+        # YVIDEO_SQL is the production database file
+        if [[ -f "$YVIDEO_SQL" ]]; then
+            # copy it into the production dockerfile folder
+            cp "$YVIDEO_SQL" db/yvideo.sql
+        else
+            echo "[$YVIDEO_SQL] does not exist."
+            echo "The environment variable YVIDEO_SQL needs to be exported to this script in order to run yvideo in production mode."
+            exit
+        fi
+
         compose_production
+        prod_cleanup
     elif [[ "$compose_override_file" = "$test_compose_file" ]]; then
         compose_test
     fi
@@ -227,6 +249,7 @@ run_docker_compose () {
     [[ -n "$attach" ]] && sudo docker attach runayamel_yvideo_1
 }
 
+cd "$scriptpath"
 options "$@"
 [[ -n "$remove" ]] && remove_containers
 [[ -n "$compose_override_file" ]] && setup && run_docker_compose

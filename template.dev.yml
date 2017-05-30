@@ -14,6 +14,8 @@ services:
 
     lamp:
         image: tutum/lamp:latest
+        ports:
+         - "80:80"
         volumes:
          - ${Ayamel_js}:/app/Ayamel.js
          - ${subtitle_timeline_editor}:/app/subtitle-timeline-editor
