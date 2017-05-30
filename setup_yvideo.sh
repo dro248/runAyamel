@@ -5,6 +5,7 @@ force_clone=""
 attach=""
 remove=""
 clean=""
+super_duper_clean=""
 travis=""
 test_local=""
 ayamel_dir=""
@@ -39,6 +40,7 @@ usage () {
     echo "  [--clean       | -c]    Remove all of the created files in the runAyamel directory."
     echo '                          Cleanup is run before any other setup.'
     echo '                          This option can be used without one of the required params.'
+    echo '                          If specified twice, cleanup will be called before and after setup.'
     echo
     echo
     echo 'Required Params (One of the following. The last given option will be used if multiple are provided):'
@@ -92,6 +94,9 @@ options () {
             remove=true
         elif [[ "$opt" = "--clean" ]] || [[ "$opt" = "-c" ]];
         then
+            if [[ -n "$clean" ]]; then
+                super_duper_clean=true
+            fi
             clean=true
         else
             echo "Argument: [$opt] not recognized."
@@ -108,7 +113,11 @@ options () {
 
 remove_containers () {
     # remove all of the containers that start with runayamel_
-    sudo docker rm -f `sudo docker ps -aq -f name=${project_name}_*` 
+    container_ids=$(sudo docker ps -aq -f name=${project_name}_*)
+    if [[ -n "$continer_ids" ]]; then
+        # check non-empty so there are no errors printed
+        sudo docker rm -f "$container_ids"
+    fi
 }
 
 compose_dev () {
@@ -253,6 +262,7 @@ run_docker_compose () {
 cd "$scriptpath"
 options "$@"
 [[ -n "$remove" ]] && remove_containers
-[[ -n "$compose_override_file" ]] && setup && run_docker_compose
 [[ -n "$clean" ]]                 && cleanup
+[[ -n "$compose_override_file" ]] && setup && run_docker_compose
+[[ -n "$super_duper_clean" ]]     && cleanup
 
