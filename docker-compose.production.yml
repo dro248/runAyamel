@@ -12,7 +12,7 @@ services:
             dockerfile: Dockerfile
         image: yvideo
         ports:
-         - "9000:9004"
+         - "9001:9000"
 
         command: bash -c "sbt clean stage && target/universal/stage/bin/ayamelexamples"
 
