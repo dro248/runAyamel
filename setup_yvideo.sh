@@ -184,7 +184,9 @@ prod_cleanup () {
     cd ../
     cd lamp
     rm -rf "${!repos[@]}"
-    git checkout -- ayamel.sql
+    cd ..
+    cd db
+    git checkout -- yvideo.sql
     cd ..
 }
 
@@ -236,7 +238,6 @@ setup () {
         fi
 
         compose_production
-        prod_cleanup
     elif [[ "$compose_override_file" = "$test_compose_file" ]]; then
         compose_test
     fi
