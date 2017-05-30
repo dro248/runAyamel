@@ -29,7 +29,6 @@ usage () {
     echo "                          Used for: ${!repos[@]}"
     echo '                          (default is $GITDIR or ~/Documents/GitHub for everything)'
     echo '                          Only used with --test and --dev'
-    echo '  [--force-clone | -f]    Overwrite the dockerfile repository dro248/runAyamel (you will lose changes)'
     echo '  [--help        | -h]    Show this dialog'
     echo '  [--attach      | -a]    Attach to the yvideo container after starting it'
     echo '                          The containers will be run in the background unless attach is specified'
@@ -44,7 +43,7 @@ usage () {
     echo
     echo '  [--production  | -p]    Use the production docker-compose override file.'
     echo '  [--dev         | -d]    Use the development docker-compose override file.'
-    echo '  [--test        | -t]    Use the dev docker-compose override file.'
+    echo '  [--test        | -t]    Use the development docker-compose override file.'
     echo '                          Use volumes and run tests locally'
     echo '  [--tavis           ]    Use the testing docker-compose override file.'
     echo '                          Travis specific setup'
