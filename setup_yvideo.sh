@@ -113,8 +113,9 @@ options () {
 
 remove_containers () {
     # remove all of the containers that start with runayamel_
+    echo "hi"
     container_ids=$(sudo docker ps -aq -f name=${project_name}_*)
-    if [[ -n "$continer_ids" ]]; then
+    if [[ -n "$container_ids" ]]; then
         # check non-empty so there are no errors printed
         sudo docker rm -f "$container_ids"
     fi

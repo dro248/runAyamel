@@ -22,6 +22,9 @@ services:
          - ${TimedText}:/app/TimedText
          - ${EditorWidgets}:/app/EditorWidgets
 
+    database:
+        image: yvideo_dev
+
 volumes:
     yvideo:
     lamp:

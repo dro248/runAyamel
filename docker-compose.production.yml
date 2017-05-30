@@ -21,3 +21,6 @@ services:
         image: production_lamp
         ports:
          - "80:80"
+
+    database:
+        image: yvideo_prod
