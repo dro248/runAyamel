@@ -258,7 +258,7 @@ run_docker_compose () {
     # Run docker-compose file (within runAyamel directory)
     echo "Creating Database & App..."
     sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d
-    [[ -n "$attach" ]] && sudo docker attach runayamel_yvideo_1
+    [[ -n "$attach" ]] && sudo docker attach --sig-proxy=false runayamel_yvideo_1
 }
 
 cd "$scriptpath"
