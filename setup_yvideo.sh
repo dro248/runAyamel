@@ -175,7 +175,7 @@ compose_production () {
         git clone -b master --depth 1 "$repo" lamp/$(basename $repo) &> /dev/null
     done
     # clone the ayamel branch into the production folder
-    git clone -b master --depth 1 "$ayamel_remote" production/$(basename $repo) &> /dev/null
+    git clone -b master --depth 1 "$ayamel_remote" production/$(basename $ayamel_remote) &> /dev/null
 }
 
 # arg 1 is one of [ production, dev, test ]
