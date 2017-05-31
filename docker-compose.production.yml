@@ -10,7 +10,7 @@ services:
             args:
                 sbt_version: 0.13.8
             dockerfile: Dockerfile
-        image: yvideo
+        image: yvideo_prod
         ports:
          - "9001:9000"
 
@@ -18,9 +18,9 @@ services:
 
     lamp:
         build: lamp
-        image: production_lamp
+        image: lamp_prod
         ports:
          - "80:80"
 
     database:
-        image: yvideo_prod
+        image: yvideodb_prod

@@ -23,7 +23,7 @@ services:
          - ${EditorWidgets}:/app/EditorWidgets
 
     database:
-        image: yvideo_dev
+        image: yvideodb_dev
 
 volumes:
     yvideo:
