@@ -51,6 +51,13 @@ usage () {
     echo '                          Use volumes and run tests locally'
     echo '  [--tavis           ]    Use the testing docker-compose override file.'
     echo '                          Travis specific setup'
+    echo
+    echo
+    echo 'Environment Variables:'
+    echo
+    echo '  YVIDEO_SQL              The folder that contains all of the sql scripts for development, testing and production. *Required'
+    echo '  YVIDEO_CONFIG           The path to the application.conf. *Required only for production'
+    echo "  GITDIR                  The path to the yvideo project and all it's dependencies. Used for development. *Not required"
 }
 
 options () {
@@ -219,6 +226,16 @@ setup () {
         echo "Making space for database..."
         sudo service mysql stop
     fi
+
+    # YVIDEO_SQL is a folder that contains the sql files to load into the database
+    if [[ -f "$YVIDEO_SQL" ]]; then
+        # copy it into the dockerfile folder
+        cp "$YVIDEO_SQL/*.sql" db/
+    else
+        echo "[$YVIDEO_SQL] does not exist."
+        echo "The environment variable YVIDEO_SQL needs to be exported to this script."
+        exit
+    fi
         
     if [[ "$compose_override_file" = "$dev_compose_file" ]]; then
         compose_dev
@@ -235,16 +252,6 @@ setup () {
         else
             echo "[$YVIDEO_CONFIG] does not exist."
             echo "The environment variable YVIDEO_CONFIG needs to be exported to this script in order to run yvideo in production mode."
-            exit
-        fi
-
-        # YVIDEO_SQL is the production database file
-        if [[ -f "$YVIDEO_SQL" ]]; then
-            # copy it into the production dockerfile folder
-            cp "$YVIDEO_SQL" db/yvideo.sql
-        else
-            echo "[$YVIDEO_SQL] does not exist."
-            echo "The environment variable YVIDEO_SQL needs to be exported to this script in order to run yvideo in production mode."
             exit
         fi
 
@@ -265,6 +272,6 @@ cd "$scriptpath"
 options "$@"
 [[ -n "$remove" ]] && remove_containers
 [[ -n "$clean" ]]                 && cleanup
-[[ -n "$compose_override_file" ]] && setup && run_docker_compose
+setup && run_docker_compose
 [[ -n "$super_duper_clean" ]]     && cleanup
 
