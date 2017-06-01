@@ -1,3 +1,4 @@
 # database Dockerfile creator
 FROM mysql:latest
-ADD *.sql /docker-entrypoint-initdb.d
+COPY *.sql /docker-entrypoint-initdb.d/
+COPY database_init.sh /docker-entrypoint-initdb.d/

@@ -203,9 +203,6 @@ prod_cleanup () {
     cd lamp
     rm -rf "${!repos[@]}"
     cd ..
-    cd db
-    git checkout -- yvideo.sql
-    cd ..
 }
 
 dev_cleanup () {
@@ -218,6 +215,21 @@ cleanup () {
     echo "Cleanup..."
     prod_cleanup
     dev_cleanup
+    cd db
+    rm -f *.sql
+    cd ..
+}
+
+generate_database_init () {
+    # YVIDEO_SQL is a folder that contains the sql files to load into the database
+    if [[ -d "$YVIDEO_SQL" ]]; then
+        # copy it into the dockerfile folder
+        cp "$YVIDEO_SQL/"*.sql db/
+    else
+        echo "[$YVIDEO_SQL] does not exist."
+        echo "The environment variable YVIDEO_SQL needs to be exported to this script."
+        exit
+    fi
 }
 
 setup () {
@@ -227,16 +239,8 @@ setup () {
         sudo service mysql stop
     fi
 
-    # YVIDEO_SQL is a folder that contains the sql files to load into the database
-    if [[ -f "$YVIDEO_SQL" ]]; then
-        # copy it into the dockerfile folder
-        cp "$YVIDEO_SQL/*.sql" db/
-    else
-        echo "[$YVIDEO_SQL] does not exist."
-        echo "The environment variable YVIDEO_SQL needs to be exported to this script."
-        exit
-    fi
-        
+    generate_database_init
+
     if [[ "$compose_override_file" = "$dev_compose_file" ]]; then
         compose_dev
     elif [[ "$compose_override_file" = "$production_compose_file" ]]; then
@@ -272,6 +276,6 @@ cd "$scriptpath"
 options "$@"
 [[ -n "$remove" ]] && remove_containers
 [[ -n "$clean" ]]                 && cleanup
-setup && run_docker_compose
+[[ -n "$compose_override_file" ]] && setup && run_docker_compose
 [[ -n "$super_duper_clean" ]]     && cleanup
 
