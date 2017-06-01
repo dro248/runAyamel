@@ -11,9 +11,6 @@ services:
 
         command: ["sbt", "test"]
 
-    database:
-        image: yvideo_test
-
 volumes:
     yvideo:
 

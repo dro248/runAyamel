@@ -22,5 +22,3 @@ services:
         ports:
          - "80:80"
 
-    database:
-        image: yvideodb_prod
