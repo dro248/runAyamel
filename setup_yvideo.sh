@@ -13,6 +13,7 @@ project_name="runayamel"
 git_dir=${GITDIR:-~/Documents/GitHub}
 scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
 compose_override_file="" dev_compose_file="docker-compose.dev.yml"
+beta_compose_file="docker-compose.beta.yml"
 production_compose_file="docker-compose.production.yml"
 test_compose_file="docker-compose.test.yml"
 
@@ -46,6 +47,7 @@ usage () {
     echo 'Required Params (One of the following. The last given option will be used if multiple are provided):'
     echo
     echo '  [--production  | -p]    Use the production docker-compose override file.'
+    echo '  [--beta        | -b]    Use the beta docker-compose override file.'
     echo '  [--dev         | -d]    Use the development docker-compose override file.'
     echo '  [--test        | -t]    Use the development docker-compose override file.'
     echo '                          Use volumes and run tests locally'
@@ -77,6 +79,10 @@ options () {
         elif [[ "$opt" = "--production" ]] || [[ "$opt" = "-p" ]];
         then
             compose_override_file="$production_compose_file"
+
+        elif [[ "$opt" = "--beta" ]] || [[ "$opt" = "-b" ]];
+        then
+            compose_override_file="$beta_compose_file"
 
         elif [[ "$opt" = "--travis" ]];
         then
@@ -177,17 +183,36 @@ compose_test () {
     done
 }
 
-# does a shallow clone with only 1 commit on the master branch for all repositories
+# does a shallow clone with only 1 commit on the $1 branch for all repositories
+# expects a branchname as an argument
+# The branch should exist on all yvideo repositories
+# clones the repos into the $2 folder
+# $2 should be either production or beta
 compose_production () {
     # clone the dependencies into the lamp folder
     for repo in "${dependencies_remotes[@]}"; do
-        git clone -b master --depth 1 "$repo" lamp/$(basename $repo) &> /dev/null
+        git clone -b "$1" --depth 1 "$repo" lamp/"$2"/$(basename $repo) &> /dev/null
     done
     # clone the ayamel branch into the production folder
-    git clone -b master --depth 1 "$ayamel_remote" production/$(basename $ayamel_remote) &> /dev/null
+    git clone -b "$1" --depth 1 "$ayamel_remote" "$2"/$(basename $ayamel_remote) &> /dev/null
+
+    # copy the application.conf file into the context of the dockerfile
+    # Needs to be copied because:
+    # The <src> path must be inside the context of the build;
+    # you cannot COPY ../something /something, because the first step of a docker build
+    # is to send the context directory (and subdirectories) to the docker daemon.
+    # https://docs.docker.com/engine/reference/builder/#copy
+    if [[ -f "$YVIDEO_CONFIG" ]]; then
+        # copy it into the production dockerfile folder
+        cp "$YVIDEO_CONFIG" "$2"
+    else
+        echo "[$YVIDEO_CONFIG] does not exist."
+        echo "The environment variable YVIDEO_CONFIG_[BETA | PROD] needs to be exported to this script in order to run yvideo in production mode."
+        exit
+    fi
 }
 
-# arg 1 is one of [ production, dev, test ]
+# arg 1 is one of [ production, dev, test, beta ]
 # and corresponds to the docker-compose template we want to fill out
 # with environment variables
 substitute_environment_variables () {
@@ -197,11 +222,15 @@ substitute_environment_variables () {
 
 prod_cleanup () {
     cd production
-    rm -rf "${!repos[@]}"
+    rm -rf Ayamel
     rm -f application.conf
     cd ../
-    cd lamp
-    rm -rf "${!repos[@]}"
+}
+
+beta_cleanup () {
+    cd beta
+    rm -rf Ayamel
+    rm -f application.conf*
     cd ..
 }
 
@@ -214,13 +243,17 @@ dev_cleanup () {
 cleanup () {
     echo "Cleanup..."
     prod_cleanup
+    beta_cleanup
     dev_cleanup
     cd db
     rm -f *.sql
     cd ..
+    cd lamp
+    rm -rf "${!repos[@]}"
+    cd ..
 }
 
-generate_database_init () {
+database_init () {
     # YVIDEO_SQL is a folder that contains the sql files to load into the database
     if [[ -d "$YVIDEO_SQL" ]]; then
         # copy it into the dockerfile folder
@@ -239,27 +272,20 @@ setup () {
         sudo service mysql stop
     fi
 
-    generate_database_init
+    database_init
 
     if [[ "$compose_override_file" = "$dev_compose_file" ]]; then
         compose_dev
     elif [[ "$compose_override_file" = "$production_compose_file" ]]; then
-        # copy the application.conf file into the context of the dockerfile
-        # Needs to be copied because:
-        # The <src> path must be inside the context of the build;
-        # you cannot COPY ../something /something, because the first step of a docker build
-        # is to send the context directory (and subdirectories) to the docker daemon.
-        # https://docs.docker.com/engine/reference/builder/#copy
-        if [[ -f "$YVIDEO_CONFIG" ]]; then
-            # copy it into the production dockerfile folder
-            cp "$YVIDEO_CONFIG" production
-        else
-            echo "[$YVIDEO_CONFIG] does not exist."
-            echo "The environment variable YVIDEO_CONFIG needs to be exported to this script in order to run yvideo in production mode."
-            exit
-        fi
-
-        compose_production
+        branchname="master"
+        destination="production"
+        YVIDEO_CONFIG="$YVIDEO_CONFIG_PROD"
+        compose_production $branchname $destination
+    elif [[ "$compose_override_file" = "$beta_compose_file" ]]; then
+        branchname="develop"
+        destination="beta"
+        YVIDEO_CONFIG="$YVIDEO_CONFIG_BETA"
+        compose_production $branchname $destination
     elif [[ "$compose_override_file" = "$test_compose_file" ]]; then
         compose_test
     fi
