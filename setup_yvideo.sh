@@ -191,7 +191,7 @@ compose_test () {
 compose_production () {
     # clone the dependencies into the lamp folder
     for repo in "${dependencies_remotes[@]}"; do
-        git clone -b "$1" --depth 1 "$repo" lamp/"$2"/$(basename $repo) &> /dev/null
+        git clone -b "$1" --depth 1 "$repo" lamp/"$2"/"$2"/$(basename $repo) &> /dev/null
     done
     # clone the ayamel branch into the production folder
     git clone -b "$1" --depth 1 "$ayamel_remote" "$2"/$(basename $ayamel_remote) &> /dev/null
@@ -251,14 +251,16 @@ cleanup () {
     cd lamp
     rm -rf beta
     rm -rf production
-    rm -rf dev
     cd ..
 }
 
 lamp_init () {
-    cd lamp
-    mkdir beta production dev
-    cd ..
+    # the dependencies go inside there
+    # docker 17.05 doesn't like to copy the deps' folders' if they are in production/Dep_folder
+    # it cuts out the first folder for some reason
+    # so we nest another folder there
+    # it might just be an error with the way we are copying in the dockerfile
+    mkdir -p lamp/beta/beta lamp/production/production
 }
 
 database_init () {
