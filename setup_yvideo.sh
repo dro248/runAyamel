@@ -204,7 +204,7 @@ compose_production () {
     # https://docs.docker.com/engine/reference/builder/#copy
     if [[ -f "$YVIDEO_CONFIG" ]]; then
         # copy it into the production dockerfile folder
-        cp "$YVIDEO_CONFIG" "$2"
+        cp "$YVIDEO_CONFIG" "$2"/application.conf
     else
         echo "[$YVIDEO_CONFIG] does not exist."
         echo "The environment variable YVIDEO_CONFIG_[BETA | PROD] needs to be exported to this script in order to run yvideo in production mode."
@@ -249,7 +249,15 @@ cleanup () {
     rm -f *.sql
     cd ..
     cd lamp
-    rm -rf "${!repos[@]}"
+    rm -rf beta
+    rm -rf production
+    rm -rf dev
+    cd ..
+}
+
+lamp_init () {
+    cd lamp
+    mkdir beta production dev
     cd ..
 }
 
@@ -273,6 +281,7 @@ setup () {
     fi
 
     database_init
+    lamp_init
 
     if [[ "$compose_override_file" = "$dev_compose_file" ]]; then
         compose_dev

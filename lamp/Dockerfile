@@ -1,8 +1,6 @@
 FROM tutum/lamp:latest
 
-# Yvideo static js dependencies
-COPY Ayamel.js /var/www/html/
-COPY EditorWidgets /var/www/html/
-COPY TimedText /var/www/html/
-COPY subtitle-timeline-editor /var/www/html/
+COPY production /var/www/html/
+COPY dev /var/www/html/
+COPY beta /var/www/html/
 
