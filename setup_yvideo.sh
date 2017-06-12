@@ -43,6 +43,8 @@ usage () {
     echo '                          Cleanup is run before any other setup.'
     echo '                          This option can be used without one of the required params.'
     echo '                          If specified twice, cleanup will be called before and after setup.'
+    echo "  [--setup-only      ]    Will set up all of the specified services but will not run docker-compose."
+    echo "                          Mainly for development and testing of $project_name"
     echo
     echo
     echo 'Required Params (One of the following. The last given option will be used if multiple are provided):'
@@ -59,7 +61,8 @@ usage () {
     echo 'Environment Variables:'
     echo
     echo '  YVIDEO_SQL              The folder that contains all of the sql scripts for development, testing and production. *Required'
-    echo '  YVIDEO_CONFIG           The path to the application.conf. *Required only for production'
+    echo '  YVIDEO_CONFIG_PROD      The path to the application.conf. *Required only for production'
+    echo '  YVIDEO_CONFIG_PROD      The path to the application.conf for the beta service. *Required only for beta'
     echo "  GITDIR                  The path to the yvideo project and all it's dependencies. Used for development. *Not required"
 }
 
