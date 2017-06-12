@@ -5,6 +5,7 @@ force_clone=""
 attach=""
 remove=""
 clean=""
+setup_only=""
 super_duper_clean=""
 travis=""
 test_local=""
@@ -111,6 +112,10 @@ options () {
                 super_duper_clean=true
             fi
             clean=true
+
+        elif [[ "$opt" = "--setup-only" ]];
+        then
+            setup_only=true
         else
             echo "Argument: [$opt] not recognized."
         fi
@@ -189,10 +194,6 @@ compose_test () {
 # clones the repos into the $2 folder
 # $2 should be either production or beta
 compose_production () {
-    # clone the dependencies into the lamp folder
-    for repo in "${dependencies_remotes[@]}"; do
-        git clone -b "$1" --depth 1 "$repo" lamp/"$2"/"$2"/$(basename $repo) &> /dev/null
-    done
     # clone the ayamel branch into the production folder
     git clone -b "$1" --depth 1 "$ayamel_remote" "$2"/$(basename $ayamel_remote) &> /dev/null
 
@@ -260,7 +261,19 @@ lamp_init () {
     # it cuts out the first folder for some reason
     # so we nest another folder there
     # it might just be an error with the way we are copying in the dockerfile
-    mkdir -p lamp/beta/beta lamp/production/production
+    mkdir -p lamp/beta lamp/production
+
+    # clone the dependencies into the lamp folder
+    declare -A services
+    services[production]="master"
+    services[beta]="develop"
+
+    for service in "${!services[@]}"; do
+        for repo in "${dependencies_remotes[@]}"; do
+            git clone -b "${services[$service]}" --depth 1 "$repo" lamp/"$service"/$(basename $repo) &> /dev/null
+        done
+    done
+    exit
 }
 
 database_init () {
@@ -313,6 +326,6 @@ cd "$scriptpath"
 options "$@"
 [[ -n "$remove" ]] && remove_containers
 [[ -n "$clean" ]]                 && cleanup
-[[ -n "$compose_override_file" ]] && setup && run_docker_compose
+[[ -n "$compose_override_file" ]] && setup && [[ -z "$setup_only" ]] && run_docker_compose
 [[ -n "$super_duper_clean" ]]     && cleanup
 

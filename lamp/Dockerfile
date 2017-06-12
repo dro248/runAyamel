@@ -1,5 +1,5 @@
 FROM tutum/lamp:latest
 
-COPY production /var/www/html/
-COPY beta /var/www/html/
+ADD production /var/www/html/production
+ADD beta /var/www/html/beta
 
