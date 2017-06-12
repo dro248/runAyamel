@@ -276,7 +276,6 @@ lamp_init () {
             git clone -b "${services[$service]}" --depth 1 "$repo" lamp/"$service"/$(basename $repo) &> /dev/null
         done
     done
-    exit
 }
 
 database_init () {
