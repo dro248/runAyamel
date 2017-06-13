@@ -4,6 +4,7 @@ default=""
 force_clone=""
 attach=""
 remove=""
+build=""
 clean=""
 setup_only=""
 super_duper_clean=""
@@ -45,6 +46,8 @@ usage () {
     echo '                          If specified twice, cleanup will be called before and after setup.'
     echo "  [--setup-only      ]    Will set up all of the specified services but will not run docker-compose."
     echo "                          Mainly for development and testing of $project_name"
+    echo "  [--build           ]    Pass --build to docker-compose up"
+    echo "                          Used to rebuild images."
     echo
     echo
     echo 'Required Params (One of the following. The last given option will be used if multiple are provided):'
@@ -97,6 +100,10 @@ options () {
         then
             compose_override_file="$dev_compose_file"
             test_local=true
+
+        elif [[ "$opt" = "--build" ]];
+        then
+            build="$opt"
 
         elif [[ "$opt" = "--help" ]] || [[ "$opt" = "-h" ]];
         then
@@ -320,7 +327,7 @@ setup () {
 run_docker_compose () {
     # Run docker-compose file (within runAyamel directory)
     echo "Creating Database & App..."
-    sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d
+    sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d "$build"
     [[ -n "$attach" ]] && sudo docker attach --sig-proxy=false runayamel_yvideo_1
 }
 
