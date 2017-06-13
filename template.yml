@@ -9,7 +9,7 @@ services:
         environment:
             MYSQL_ROOT_PASSWORD: "test"
         volumes:
-         - /var/lib/mysql:
+         - ${YVIDEO_SQL_DATA}:/var/lib/mysql
 
 volumes:
     database:

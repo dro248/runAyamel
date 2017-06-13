@@ -10,7 +10,7 @@ services:
             args:
                 sbt_version: 0.13.8
             dockerfile: Dockerfile
-        image: yvideo_prod
+        image: yvideo_beta
         ports:
          - "9006:9000"
 

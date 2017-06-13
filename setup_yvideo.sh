@@ -57,15 +57,18 @@ usage () {
     echo '  [--dev         | -d]    Use the development docker-compose override file.'
     echo '  [--test        | -t]    Use the development docker-compose override file.'
     echo '                          Use volumes and run tests locally'
-    echo '  [--tavis           ]    Use the testing docker-compose override file.'
+    echo '  [--travis          ]    Use the testing docker-compose override file.'
     echo '                          Travis specific setup'
     echo
     echo
     echo 'Environment Variables:'
     echo
-    echo '  YVIDEO_SQL              The folder that contains all of the sql scripts for development, testing and production. *Required'
+    echo '  YVIDEO_SQL              The folder that contains all of the sql scripts to be run.'
+    echo '                          Files in this folder should be named <DATABASE_NAME>.sql.'
+    echo '                          One database will be created per file and will have the same name as the .sql file.'
+    echo '  YVIDEO_SQL_DATA         The folder for the mysql data volume. *Required'
     echo '  YVIDEO_CONFIG_PROD      The path to the application.conf. *Required only for production'
-    echo '  YVIDEO_CONFIG_PROD      The path to the application.conf for the beta service. *Required only for beta'
+    echo '  YVIDEO_CONFIG_BETA      The path to the application.conf for the beta service. *Required only for beta'
     echo "  GITDIR                  The path to the yvideo project and all it's dependencies. Used for development. *Not required"
 }
 
@@ -188,7 +191,7 @@ compose_dev () {
     export subtitle_timeline_editor="${repos[subtitle-timeline-editor]}"
     export EditorWidgets="${repos[EditorWidgets]}"
     export TimedText="${repos[TimedText]}"
-    substitute_environment_variables "dev"
+    substitute_environment_variables "template.dev.yml" "docker-compose.dev.yml"
 }
 
 compose_test () {
@@ -223,12 +226,17 @@ compose_production () {
     fi
 }
 
-# arg 1 is one of [ production, dev, test, beta ]
+# $1 is the template file ex: template.dev.yml
 # and corresponds to the docker-compose template we want to fill out
 # with environment variables
+# $2 is the name of the output file
 substitute_environment_variables () {
-    echo "Substituting Environment variables for template.$1.yml"
-    cat "template.$1.yml" | envsubst > "$compose_override_file"
+    echo "Substituting Environment variables for $1 --> $2"
+    if [[ ! -f "$1" ]]; then
+        echo "[ERROR]: substitute environment variables: $1 does not exist."
+        exit
+    fi
+    cat "$1" | envsubst > "$2"
 }
 
 prod_cleanup () {
@@ -256,9 +264,14 @@ cleanup () {
     prod_cleanup
     beta_cleanup
     dev_cleanup
+
+    # remove the filled out version of the base docker-compose file
+    rm -f docker-compose.yml
+
     cd db
     rm -f *.sql
     cd ..
+
     cd lamp
     rm -rf beta
     rm -rf production
@@ -286,14 +299,20 @@ lamp_init () {
 }
 
 database_init () {
+    # Check for the data volume environment variable
+    if [[ ! -d "$YVIDEO_SQL_DATA" ]]; then
+        echo "[$YVIDEO_SQL_DATA] does not exist."
+        echo "The environment variable YVIDEO_SQL_DATA needs to be exported to this script."
+        exit
+    fi
+
     # YVIDEO_SQL is a folder that contains the sql files to load into the database
     if [[ -d "$YVIDEO_SQL" ]]; then
         # copy it into the dockerfile folder
         cp "$YVIDEO_SQL/"*.sql db/
     else
         echo "[$YVIDEO_SQL] does not exist."
-        echo "The environment variable YVIDEO_SQL needs to be exported to this script."
-        exit
+        echo "No new databases will be created."
     fi
 }
 
@@ -305,6 +324,7 @@ setup () {
     fi
 
     database_init
+    substitute_environment_variables "template.yml" "docker-compose.yml"
     lamp_init
 
     if [[ "$compose_override_file" = "$dev_compose_file" ]]; then
@@ -327,7 +347,9 @@ setup () {
 run_docker_compose () {
     # Run docker-compose file (within runAyamel directory)
     echo "Creating Database & App..."
-    sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d "$build"
+    echo "BUILD:$build"
+    # quoting "$build" breaks docker-compose up if it is empty
+    sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d $build
     [[ -n "$attach" ]] && sudo docker attach --sig-proxy=false runayamel_yvideo_1
 }
 
