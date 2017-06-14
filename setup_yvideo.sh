@@ -347,7 +347,6 @@ setup () {
 run_docker_compose () {
     # Run docker-compose file (within runAyamel directory)
     echo "Creating Database & App..."
-    echo "BUILD:$build"
     # quoting "$build" breaks docker-compose up if it is empty
     sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d $build
     [[ -n "$attach" ]] && sudo docker attach --sig-proxy=false runayamel_yvideo_1
