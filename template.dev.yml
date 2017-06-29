@@ -6,7 +6,7 @@ services:
          - database
          - lamp
         build: dev
-        image: yvideo
+        image: yvideo_dev
         volumes:
          - ${Ayamel}:/Ayamel
         stdin_open: true
