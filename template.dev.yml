@@ -10,6 +10,8 @@ services:
         volumes:
          - ${Ayamel}:/Ayamel
         stdin_open: true
+        ports:
+         - "9000:9000"
         command: ["sbt", "${dev_command}"]
 
     lamp:
