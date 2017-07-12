@@ -1,16 +1,28 @@
 version: '3'
 
 services:
-    yvideo:
-        volumes:
-         - ./Ayamel:/Ayamel
-         - ./Ayamel.js:/var/www/html/Ayamel.js
-         - ./EditorWidgets:/var/www/html/EditorWidgets
-         - ./subtitle-timeline-editor:/var/www/html/subtitle-timeline-editor
-         - ./TimedText:/var/www/html/TimedText
-
+    yvideo_test:
+        depends_on:
+         - lamp
+         - database
+        build:
+            context: test
+            args:
+                sbt_version: 0.13.8
+            dockerfile: Dockerfile
+        image: yvideo_test
         command: ["sbt", "test"]
 
-volumes:
-    yvideo:
+    database:
+        build: db
+        image: yvideodb
+        ports:
+         - "3306:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: "test"
+
+    lamp:
+        build: lamp
+        ports:
+         - "80:80"
 

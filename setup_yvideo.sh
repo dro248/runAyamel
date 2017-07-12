@@ -18,6 +18,7 @@ compose_override_file="" dev_compose_file="docker-compose.dev.yml"
 beta_compose_file="docker-compose.beta.yml"
 production_compose_file="docker-compose.production.yml"
 test_compose_file="docker-compose.test.yml"
+container=""
 
 declare -A repos # Associative array! :) used in the compose_dev function
 repos=([Ayamel]="" [Ayamel.js]="" [EditorWidgets]="" [subtitle-timeline-editor]="" [TimedText]="")
@@ -40,14 +41,14 @@ usage () {
     echo '                          The containers will be run in the background unless attach is specified'
     echo "  [--remove      | -r]    Removes all of the containers that start with the project prefix: $project_name"
     echo '                          Containers are removed before anything else is done.'
-    echo "  [--clean       | -c]    Remove all of the created files in the runAyamel directory."
+    echo '  [--clean       | -c]    Remove all of the created files in the runAyamel directory.'
     echo '                          Cleanup is run before any other setup.'
     echo '                          This option can be used without one of the required params.'
     echo '                          If specified twice, cleanup will be called before and after setup.'
-    echo "  [--setup-only      ]    Will set up all of the specified services but will not run docker-compose."
+    echo '  [--setup-only      ]    Will set up all of the specified services but will not run docker-compose.'
     echo "                          Mainly for development and testing of $project_name"
-    echo "  [--build           ]    Pass --build to docker-compose up"
-    echo "                          Used to rebuild images."
+    echo '  [--build           ]    Pass --build to docker-compose up'
+    echo '                          Used to rebuild images.'
     echo
     echo
     echo 'Required Params (One of the following. The last given option will be used if multiple are provided):'
@@ -63,10 +64,10 @@ usage () {
     echo
     echo 'Environment Variables:'
     echo
-    echo '  YVIDEO_SQL              The folder that contains all of the sql scripts to be run.'
+    echo '  YVIDEO_SQL              The folder that contains all of the sql scripts to be run. *Not required'
     echo '                          Files in this folder should be named <DATABASE_NAME>.sql.'
     echo '                          One database will be created per file and will have the same name as the .sql file.'
-    echo '  YVIDEO_SQL_DATA         The folder for the mysql data volume. *Required'
+    echo '  YVIDEO_SQL_DATA         The folder for the mysql data volume. *Required (Except when using --travis)'
     echo '  YVIDEO_CONFIG_PROD      The path to the application.conf. *Required only for production'
     echo '  YVIDEO_CONFIG_BETA      The path to the application.conf for the beta service. *Required only for beta'
     echo "  GITDIR                  The path to the yvideo project and all it's dependencies. Used for development. *Not required"
@@ -85,18 +86,22 @@ options () {
         elif [[ "$opt" = "--dev" ]] || [[ "$opt" = "-d" ]];
         then
             compose_override_file="$dev_compose_file"
+            container="$project_name_yvideo_dev_1"
 
         elif [[ "$opt" = "--production" ]] || [[ "$opt" = "-p" ]];
         then
             compose_override_file="$production_compose_file"
+            container="$project_name_yvideo_prod_1"
 
         elif [[ "$opt" = "--beta" ]] || [[ "$opt" = "-b" ]];
         then
             compose_override_file="$beta_compose_file"
+            container="$project_name_yvideo_beta_1"
 
         elif [[ "$opt" = "--travis" ]];
         then
             compose_override_file="$test_compose_file"
+            container="$project_name_yvideo_test_1"
             travis=true
 
         elif [[ "$opt" = "--test" ]] || [[ "$opt" = "-t" ]];
@@ -110,7 +115,7 @@ options () {
 
         elif [[ "$opt" = "--help" ]] || [[ "$opt" = "-h" ]];
         then
-            usage && exit
+            usage && exit 1
 
         elif [[ "$opt" = "--attach" ]] || [[ "$opt" = "-a" ]];
         then
@@ -194,11 +199,20 @@ compose_dev () {
     substitute_environment_variables "template.dev.yml" "docker-compose.dev.yml"
 }
 
+# used when --travis is specified
 compose_test () {
-    # clone the dependencies
-    for repo in "${remotes[@]}"; do
-        git clone "$repo" dev/$(basename $repo) &> /dev/null
-    done
+
+    if [[ -z "$BRANCH" ]]; then
+        echo "--travis flag is meant for use on travis CI."
+        echo "To test this mode, create an environment variable named BRANCH that"
+        echo "contains the name of the branch that you want to test."
+        exit 1
+    fi
+    if [[ "$BRANCH" != "master" ]]; then
+        # all branches of Ayamel use the develop branch of the dependencies except for
+        # the master branch which uses the master branch of the dependencies
+        BRANCH="develop"
+    fi
 }
 
 # does a shallow clone with only 1 commit on the $1 branch for all repositories
@@ -207,8 +221,6 @@ compose_test () {
 # clones the repos into the $2 folder
 # $2 should be either production or beta
 compose_production () {
-    # clone the ayamel branch into the production folder
-    git clone -b "$1" --depth 1 "$ayamel_remote" "$2"/$(basename $ayamel_remote) &> /dev/null
 
     # copy the application.conf file into the context of the dockerfile
     # Needs to be copied because:
@@ -217,12 +229,14 @@ compose_production () {
     # is to send the context directory (and subdirectories) to the docker daemon.
     # https://docs.docker.com/engine/reference/builder/#copy
     if [[ -f "$YVIDEO_CONFIG" ]]; then
+        # clone the ayamel branch into the production folder
+        git clone -b "$1" --depth 1 "$ayamel_remote" "$2"/$(basename $ayamel_remote) &> /dev/null
         # copy it into the production dockerfile folder
         cp "$YVIDEO_CONFIG" "$2"/application.conf
     else
         echo "[$YVIDEO_CONFIG] does not exist."
         echo "The environment variable YVIDEO_CONFIG_[BETA | PROD] needs to be exported to this script in order to run yvideo in production mode."
-        exit
+        exit 1
     fi
 }
 
@@ -234,7 +248,7 @@ substitute_environment_variables () {
     echo "Substituting Environment variables for $1 --> $2"
     if [[ ! -f "$1" ]]; then
         echo "[ERROR]: substitute environment variables: $1 does not exist."
-        exit
+        exit 1
     fi
     cat "$1" | envsubst > "$2"
 }
@@ -301,9 +315,12 @@ lamp_init () {
 database_init () {
     # Check for the data volume environment variable
     if [[ ! -d "$YVIDEO_SQL_DATA" ]]; then
-        echo "[$YVIDEO_SQL_DATA] does not exist."
-        echo "The environment variable YVIDEO_SQL_DATA needs to be exported to this script."
-        exit
+        # We don't use database volumes for testing on travis
+        if [[ "$compose_override_file" != "$test_compose_file" ]]; then
+            echo "[$YVIDEO_SQL_DATA] does not exist."
+            echo "The environment variable YVIDEO_SQL_DATA needs to be exported to this script."
+            exit 1
+        fi
     fi
 
     # YVIDEO_SQL is a folder that contains the sql files to load into the database
@@ -317,7 +334,7 @@ database_init () {
 }
 
 setup () {
-    # Turn off any other mysql database
+    # Turn off other mysql servers
     if [[ -n $(pgrep mysql) ]]; then
         echo "Making space for database..."
         sudo service mysql stop
@@ -346,10 +363,10 @@ setup () {
 
 run_docker_compose () {
     # Run docker-compose file (within runAyamel directory)
-    echo "Creating Database & App..."
+    echo "Creating Containers..."
     # quoting "$build" breaks docker-compose up if it is empty
     sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d $build
-    [[ -n "$attach" ]] && sudo docker attach --sig-proxy=false runayamel_yvideo_1
+    [[ -n "$attach" ]] && [[ -n "$container" ]] && sudo docker attach --sig-proxy=false "$container"
 }
 
 cd "$scriptpath"
