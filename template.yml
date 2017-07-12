@@ -11,6 +11,3 @@ services:
         volumes:
          - ${YVIDEO_SQL_DATA}:/var/lib/mysql
 
-volumes:
-    database:
-
