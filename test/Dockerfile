@@ -6,9 +6,6 @@ RUN apt-get install wget
 # Copy code into image
 COPY Ayamel /Ayamel/
 
-# Copy in the application.conf file
-COPY application.conf /Ayamel/conf/
-
 WORKDIR /Ayamel
 
 # Get sbt
