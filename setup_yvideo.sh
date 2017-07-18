@@ -18,6 +18,7 @@ compose_override_file="" dev_compose_file="docker-compose.dev.yml"
 beta_compose_file="docker-compose.beta.yml"
 production_compose_file="docker-compose.production.yml"
 test_compose_file="docker-compose.test.yml"
+exit_code="0"
 container=""
 
 declare -A repos # Associative array! :) used in the compose_dev function
@@ -86,27 +87,28 @@ options () {
         elif [[ "$opt" = "--dev" ]] || [[ "$opt" = "-d" ]];
         then
             compose_override_file="$dev_compose_file"
-            container="$project_name_yvideo_dev_1"
+            container="$project_name_""yvideo_dev_1"
 
         elif [[ "$opt" = "--production" ]] || [[ "$opt" = "-p" ]];
         then
             compose_override_file="$production_compose_file"
-            container="$project_name_yvideo_prod_1"
+            container="$project_name_""yvideo_prod_1"
 
         elif [[ "$opt" = "--beta" ]] || [[ "$opt" = "-b" ]];
         then
             compose_override_file="$beta_compose_file"
-            container="$project_name_yvideo_beta_1"
+            container="$project_name_""yvideo_beta_1"
 
         elif [[ "$opt" = "--travis" ]];
         then
             compose_override_file="$test_compose_file"
-            container="$project_name_yvideo_test_1"
+            container="$project_name_""yvideo_test_1"
             travis=true
 
         elif [[ "$opt" = "--test" ]] || [[ "$opt" = "-t" ]];
         then
             compose_override_file="$dev_compose_file"
+            container="$project_name""_yvideo_dev_1"
             test_local=true
 
         elif [[ "$opt" = "--build" ]];
@@ -366,6 +368,7 @@ run_docker_compose () {
     echo "Creating Containers..."
     # quoting "$build" breaks docker-compose up if it is empty
     sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d $build
+    exit_code="$?"
     [[ -n "$attach" ]] && [[ -n "$container" ]] && sudo docker attach --sig-proxy=false "$container"
 }
 
@@ -375,4 +378,5 @@ options "$@"
 [[ -n "$clean" ]]                 && cleanup
 [[ -n "$compose_override_file" ]] && setup && [[ -z "$setup_only" ]] && run_docker_compose
 [[ -n "$super_duper_clean" ]]     && cleanup
+exit "$exit_code"
 
