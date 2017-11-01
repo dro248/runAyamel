@@ -5,7 +5,11 @@ services:
         depends_on:
          - database
          - lamp
-        build: dev
+        build:
+            context: dev
+            args:
+                sbt_version: 0.13.8
+            dockerfile: Dockerfile
         image: yvideo_dev
         volumes:
          - ${Ayamel}:/Ayamel
