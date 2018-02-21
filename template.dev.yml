@@ -28,7 +28,13 @@ services:
          - ${TimedText}:/app/TimedText
          - ${EditorWidgets}:/app/EditorWidgets
 
+
+    database:
+        volumes:
+         - ${YVIDEO_SQL_DATA}:/var/lib/mysql
+
 volumes:
     yvideo:
     lamp:
+    database:
 

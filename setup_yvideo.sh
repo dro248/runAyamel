@@ -14,10 +14,12 @@ ayamel_dir=""
 project_name="runayamel"
 git_dir=${GITDIR:-~/Documents/GitHub}
 scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
-compose_override_file="" dev_compose_file="docker-compose.dev.yml"
+compose_override_file=""
+dev_compose_file="docker-compose.dev.yml"
 beta_compose_file="docker-compose.beta.yml"
 production_compose_file="docker-compose.production.yml"
 test_compose_file="docker-compose.test.yml"
+template_file=""
 exit_code="0"
 container=""
 
@@ -86,27 +88,32 @@ options () {
 
         elif [[ "$opt" = "--dev" ]] || [[ "$opt" = "-d" ]];
         then
+            template_file="template.dev.yml"
             compose_override_file="$dev_compose_file"
             container="$project_name_""yvideo_dev_1"
 
         elif [[ "$opt" = "--production" ]] || [[ "$opt" = "-p" ]];
         then
+            template_file="template.production.yml"
             compose_override_file="$production_compose_file"
             container="$project_name_""yvideo_prod_1"
 
         elif [[ "$opt" = "--beta" ]] || [[ "$opt" = "-b" ]];
         then
+            template_file="template.beta.yml"
             compose_override_file="$beta_compose_file"
             container="$project_name_""yvideo_beta_1"
 
         elif [[ "$opt" = "--travis" ]];
         then
+            template_file=""
             compose_override_file="$test_compose_file"
             container="$project_name_""yvideo_test_1"
             travis=true
 
         elif [[ "$opt" = "--test" ]] || [[ "$opt" = "-t" ]];
         then
+            template_file="template.dev.yml"
             compose_override_file="$dev_compose_file"
             container="$project_name""_yvideo_dev_1"
             test_local=true
@@ -281,9 +288,6 @@ cleanup () {
     beta_cleanup
     dev_cleanup
 
-    # remove the filled out version of the base docker-compose file
-    rm -f docker-compose.yml
-
     cd db
     rm -f *.sql
     cd ..
@@ -347,7 +351,14 @@ setup () {
     fi
 
     database_init
-    substitute_environment_variables "template.yml" "docker-compose.yml"
+    if [[ -n "$template_file" ]]; then
+        substitute_environment_variables "template.yml" "docker-compose.yml"
+    elif [[ "$compose_override_file" != "$test_compose_file" ]]; then
+        echo "Script Broken Error: "
+        echo "Using $compose_override_file but no template file was specified."
+        echo "This should not happen...exiting."
+        exit 1
+    fi
     lamp_init
 
     if [[ "$compose_override_file" = "$dev_compose_file" ]]; then
@@ -382,5 +393,6 @@ options "$@"
 [[ -n "$clean" ]]                 && cleanup
 [[ -n "$compose_override_file" ]] && setup && [[ -z "$setup_only" ]] && run_docker_compose
 [[ -n "$super_duper_clean" ]]     && cleanup
+echo Exiting with code: "$exit_code"
 exit "$exit_code"
 

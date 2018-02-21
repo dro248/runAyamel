@@ -1,20 +1,23 @@
 version: '3'
 
 services:
-    yvideo_beta:
+    yvideo_prod:
         depends_on:
          - lamp
          - database
         build:
-            context: beta
+            context: production
             args:
                 sbt_version: 0.13.8
             dockerfile: Dockerfile
-        image: yvideo_beta
+        image: yvideo_prod
         ports:
-         - "9006:9000"
-
+         - "9001:9000"
         command: bash -c "sbt clean stage && target/universal/stage/bin/ayamelexamples"
+
+    database:
+        volumes:
+         - ${YVIDEO_SQL_DATA}:/var/lib/mysql
 
     lamp:
         build: lamp

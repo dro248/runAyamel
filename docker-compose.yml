@@ -8,6 +8,4 @@ services:
          - "3306:3306"
         environment:
             MYSQL_ROOT_PASSWORD: "test"
-        volumes:
-         - ${YVIDEO_SQL_DATA}:/var/lib/mysql
 
