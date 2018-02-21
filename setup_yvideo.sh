@@ -325,8 +325,12 @@ database_init () {
         fi
     fi
 
-    # YVIDEO_SQL is a folder that contains the sql files to load into the database
-    if [[ -d "$YVIDEO_SQL" ]]; then
+    # Special case for when running from within travis
+    if [[ "$compose_override_file" = "$test_compose_file" ]]; then
+        # copy the travis sql files from the test folder
+        cp test/*.sql db/
+    elif [[ -d "$YVIDEO_SQL" ]]; then
+        # YVIDEO_SQL is a folder that contains the sql files to load into the database
         # copy it into the dockerfile folder
         cp "$YVIDEO_SQL/"*.sql db/
     else
