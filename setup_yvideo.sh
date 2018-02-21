@@ -298,7 +298,7 @@ cleanup () {
     cd ..
 }
 
-lamp_init () {
+configure_lamp () {
     # the dependencies go inside there
     # docker 17.05 doesn't like to copy the deps' folders' if they are in production/Dep_folder
     # it cuts out the first folder for some reason
@@ -318,7 +318,7 @@ lamp_init () {
     done
 }
 
-database_init () {
+configure_database () {
     # Check for the data volume environment variable
     if [[ ! -d "$YVIDEO_SQL_DATA" ]]; then
         # We don't use database volumes for testing on travis
@@ -350,16 +350,16 @@ setup () {
         sudo service mysql stop
     fi
 
-    database_init
+    configure_database
     if [[ -n "$template_file" ]]; then
-        substitute_environment_variables "template.yml" "docker-compose.yml"
+        substitute_environment_variables "$template_file" "$compose_override_file"
     elif [[ "$compose_override_file" != "$test_compose_file" ]]; then
         echo "Script Broken Error: "
         echo "Using $compose_override_file but no template file was specified."
-        echo "This should not happen...exiting."
+        echo "This should not happen...exiting"
         exit 1
     fi
-    lamp_init
+    configure_lamp
 
     if [[ "$compose_override_file" = "$dev_compose_file" ]]; then
         compose_dev
