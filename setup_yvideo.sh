@@ -35,34 +35,40 @@ remotes=("${ayamel_remote[@]}" "${dependencies_remotes[@]}")
 usage () {
     echo 'Optional Params:'
     echo
-    echo '  [--default     | -e]    Accept the default repository locations '
-    echo "                          Used for: ${!repos[@]}"
-    echo '                          (default is $GITDIR or ~/Documents/GitHub for everything)'
-    echo '                          Only used with --test and --dev'
-    echo '  [--help        | -h]    Show this dialog'
-    echo '  [--attach      | -a]    Attach to the yvideo container after starting it'
-    echo '                          The containers will be run in the background unless attach is specified'
-    echo "  [--remove      | -r]    Removes all of the containers that start with the project prefix: $project_name"
-    echo '                          Containers are removed before anything else is done.'
-    echo '  [--clean       | -c]    Remove all of the created files in the runAyamel directory.'
-    echo '                          Cleanup is run before any other setup.'
-    echo '                          This option can be used without one of the required params.'
-    echo '                          If specified twice, cleanup will be called before and after setup.'
-    echo '  [--setup-only      ]    Will set up all of the specified services but will not run docker-compose.'
-    echo "                          Mainly for development and testing of $project_name"
-    echo '  [--build           ]    Pass --build to docker-compose up'
-    echo '                          Used to rebuild images.'
+    echo '  [--default          | -e]   Accept the default repository locations '
+    echo "                               Used for: ${!repos[@]}"
+    echo '                               (default is $GITDIR or ~/Documents/GitHub for everything)'
+    echo '                               Only used with --test and --dev'
+    echo '  [--help             | -h]    Show this dialog'
+    echo '  [--attach           | -a]    Attach to the yvideo container after starting it'
+    echo '                               The containers will be run in the background unless attach is specified'
+    echo "  [--remove           | -r]    Removes all of the containers that start with the project prefix: $project_name"
+    echo '                               Containers are removed before anything else is done.'
+    echo '  [--clean            | -c]    Remove all of the created files in the runAyamel directory.'
+    echo '                               Cleanup is run before any other setup.'
+    echo '                               This option can be used without one of the required params.'
+    echo '                               If specified twice, cleanup will be called before and after setup.'
+    echo '  [--setup-only           ]    Will set up all of the specified services but will not run docker-compose.'
+    echo "                               Mainly for development and testing of $project_name"
+    echo '  [--build                ]    Will rebuild images even if they have not changed.'
+    echo '                               Passes --build to `docker-compose up`'
+    echo '                               The way docker-compose responds to --build means that volumes are not deleted.'
+    echo '                               This is good but also bad because we want a full reset of the image.'
+    echo '                               So if you need to totally recreate the image without it needing a build according to docker-compose,'
+    echo '                               then you should delete the images and containers beforehand to ensure everything is up to date.'
+    echo '  [--force-recreate   | -x]    Will recreate the containers even if they are up to date.'
+    echo '                               Passes --force-recreate to `docker-compose up`'
     echo
     echo
     echo 'Required Params (One of the following. The last given option will be used if multiple are provided):'
     echo
-    echo '  [--production  | -p]    Use the production docker-compose override file.'
-    echo '  [--beta        | -b]    Use the beta docker-compose override file.'
-    echo '  [--dev         | -d]    Use the development docker-compose override file.'
-    echo '  [--test        | -t]    Use the development docker-compose override file.'
-    echo '                          Use volumes and run tests locally'
-    echo '  [--travis          ]    Use the testing docker-compose override file.'
-    echo '                          Travis specific setup'
+    echo '  [--production       | -p]    Use the production docker-compose override file.'
+    echo '  [--beta             | -b]    Use the beta docker-compose override file.'
+    echo '  [--dev              | -d]    Use the development docker-compose override file.'
+    echo '  [--test             | -t]    Use the development docker-compose override file.'
+    echo '                               Use volumes and run tests locally'
+    echo '  [--travis               ]    Use the testing docker-compose override file.'
+    echo '                               Travis specific setup'
     echo
     echo
     echo 'Environment Variables:'
@@ -90,25 +96,25 @@ options () {
         then
             template_file="template.dev.yml"
             compose_override_file="$dev_compose_file"
-            container="$project_name_""yvideo_dev_1"
+            container="$project_name""_yvideo_dev_1"
 
         elif [[ "$opt" = "--production" ]] || [[ "$opt" = "-p" ]];
         then
             template_file="template.production.yml"
             compose_override_file="$production_compose_file"
-            container="$project_name_""yvideo_prod_1"
+            container="$project_name""_yvideo_prod_1"
 
         elif [[ "$opt" = "--beta" ]] || [[ "$opt" = "-b" ]];
         then
             template_file="template.beta.yml"
             compose_override_file="$beta_compose_file"
-            container="$project_name_""yvideo_beta_1"
+            container="$project_name""_yvideo_beta_1"
 
         elif [[ "$opt" = "--travis" ]];
         then
             template_file=""
             compose_override_file="$test_compose_file"
-            container="$project_name_""yvideo_test_1"
+            container="$project_name""_yvideo_test_1"
             travis=true
 
         elif [[ "$opt" = "--test" ]] || [[ "$opt" = "-t" ]];
@@ -121,6 +127,10 @@ options () {
         elif [[ "$opt" = "--build" ]];
         then
             build="$opt"
+
+        elif [[ "$opt" = "--force-recreate" ]] || [[ "$opt" = "-x" ]];
+        then
+            recreate="--force-recreate"
 
         elif [[ "$opt" = "--help" ]] || [[ "$opt" = "-h" ]];
         then
@@ -165,6 +175,10 @@ remove_containers () {
         # clearest is to simply call ps -a twice
         sudo docker rm -f $(sudo docker ps -aq -f name=${project_name}_*)
     fi
+}
+
+remove_volumes () {
+    
 }
 
 compose_dev () {
@@ -319,12 +333,13 @@ configure_lamp () {
 }
 
 configure_database () {
-    # Check for the data volume environment variable
+    # Check if data volume env var is defined and the path exists if we need it
     if [[ ! -d "$YVIDEO_SQL_DATA" ]]; then
         # We don't use database volumes for testing on travis
         if [[ "$compose_override_file" != "$test_compose_file" ]]; then
             echo "[$YVIDEO_SQL_DATA] does not exist."
             echo "The environment variable YVIDEO_SQL_DATA needs to be exported to this script."
+            echo "And it needs to contain the path to a directory."
             exit 1
         fi
     fi
@@ -335,7 +350,7 @@ configure_database () {
         cp test/*.sql db/
     elif [[ -d "$YVIDEO_SQL" ]]; then
         # YVIDEO_SQL is a folder that contains the sql files to load into the database
-        # copy it into the dockerfile folder
+        # copy it into the database dockerfile folder
         cp "$YVIDEO_SQL/"*.sql db/
     else
         echo "[$YVIDEO_SQL] does not exist."
@@ -346,12 +361,13 @@ configure_database () {
 setup () {
     # Turn off other mysql servers
     if [[ -n $(pgrep mysql) ]]; then
-        echo "Making space for database..."
+        echo "Stopping mysql database..."
         sudo service mysql stop
     fi
 
     configure_database
     if [[ -n "$template_file" ]]; then
+        echo "Creating $compose_override_file"
         substitute_environment_variables "$template_file" "$compose_override_file"
     elif [[ "$compose_override_file" != "$test_compose_file" ]]; then
         echo "Script Broken Error: "
@@ -381,8 +397,15 @@ setup () {
 run_docker_compose () {
     # Run docker-compose file (within runAyamel directory)
     echo "Creating Containers..."
-    # quoting "$build" breaks docker-compose up if it is empty
-    sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d $build
+
+    if [[ -n $build ]]; then
+        echo "[INFO] - Re-Building All Docker Images."
+    else
+        echo "[INFO] - Using Existing Images if Available."
+    fi
+
+    # quoting like so: "$build" breaks docker-compose up if it is empty
+    sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d $build $recreate
     exit_code="$?"
     [[ -n "$attach" ]] && [[ -n "$container" ]] && sudo docker attach --sig-proxy=false "$container"
 }
@@ -393,6 +416,6 @@ options "$@"
 [[ -n "$clean" ]]                 && cleanup
 [[ -n "$compose_override_file" ]] && setup && [[ -z "$setup_only" ]] && run_docker_compose
 [[ -n "$super_duper_clean" ]]     && cleanup
-echo Exiting with code: "$exit_code"
+# use the docker-compose up command exit code rather than whatever the last line may output
 exit "$exit_code"
 
