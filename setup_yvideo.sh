@@ -277,6 +277,7 @@ substitute_environment_variables () {
 }
 
 prod_cleanup () {
+    rm -f docker-compose.production.yml
     cd production
     rm -rf Ayamel
     rm -f application.conf
@@ -284,6 +285,7 @@ prod_cleanup () {
 }
 
 beta_cleanup () {
+    rm -f docker-compose.beta.yml
     cd beta
     rm -rf Ayamel
     rm -f application.conf*
