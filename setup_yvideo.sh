@@ -178,7 +178,7 @@ remove_containers () {
 }
 
 remove_volumes () {
-    
+    echo hi
 }
 
 compose_dev () {
