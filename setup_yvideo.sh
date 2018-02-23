@@ -4,6 +4,7 @@ default=""
 force_clone=""
 attach=""
 remove=""
+full_remove=""
 build=""
 clean=""
 setup_only=""
@@ -44,6 +45,7 @@ usage () {
     echo '                               The containers will be run in the background unless attach is specified'
     echo "  [--remove           | -r]    Removes all of the containers that start with the project prefix: $project_name"
     echo '                               Containers are removed before anything else is done.'
+    echo '  [ -frd| -frb| -frp| -frt]    Removes everything in the docker-compose project using the corresponding compose override file and docker-compose down.'
     echo '  [--clean            | -c]    Remove all of the created files in the runAyamel directory.'
     echo '                               Cleanup is run before any other setup.'
     echo '                               This option can be used without one of the required params.'
@@ -143,6 +145,27 @@ options () {
         elif [[ "$opt" = "--remove" ]] || [[ "$opt" = "-r" ]];
         then
             remove=true
+
+        elif [[ "$opt" = "-frd" ]];
+        then
+            full_remove=true
+            compose_override_file="$dev_compose_file"
+
+        elif [[ "$opt" = "-frb" ]];
+        then
+            full_remove=true
+            compose_override_file="$beta_compose_file"
+
+        elif [[ "$opt" = "-frp" ]];
+        then
+            full_remove=true
+            compose_override_file="$production_compose_file"
+
+        elif [[ "$opt" = "-frt" ]];
+        then
+            full_remove=true
+            compose_override_file="$test_compose_file"
+
         elif [[ "$opt" = "--clean" ]] || [[ "$opt" = "-c" ]];
         then
             if [[ -n "$clean" ]]; then
@@ -177,8 +200,14 @@ remove_containers () {
     fi
 }
 
-remove_volumes () {
-    echo hi
+docker_compose_down () {
+    if [[ ! -e "$compose_override_file" ]]; then
+        echo "YO!! "$compose_override_file" should exist before you can delete anything from that project"
+        echo "If you don't want to create any new containers and whatnot, you can run the following command first:"
+        echo "$0 -[d|p|t|b] --setup-only"
+        exit 1
+    fi
+    sudo docker-compose -f docker-compose.yml -f "$compose_override_file" down -v --rmi all
 }
 
 compose_dev () {
@@ -416,6 +445,9 @@ cd "$scriptpath"
 options "$@"
 [[ -n "$remove" ]] && remove_containers
 [[ -n "$clean" ]]                 && cleanup
+[[ -n "$full_remove" ]] && [[ -n "$compose_override_file" ]] && echo "Running docker-compose down" && docker_compose_down
+# exit if full remove ran
+[[ -n "$full_remove" ]] && exit $?
 [[ -n "$compose_override_file" ]] && setup && [[ -z "$setup_only" ]] && run_docker_compose
 [[ -n "$super_duper_clean" ]]     && cleanup
 # use the docker-compose up command exit code rather than whatever the last line may output
