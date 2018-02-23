@@ -15,6 +15,7 @@ ayamel_dir=""
 project_name="runayamel"
 git_dir=${GITDIR:-~/Documents/GitHub}
 scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
+service=""
 compose_override_file=""
 dev_compose_file="docker-compose.dev.yml"
 beta_compose_file="docker-compose.beta.yml"
@@ -36,7 +37,7 @@ remotes=("${ayamel_remote[@]}" "${dependencies_remotes[@]}")
 usage () {
     echo 'Optional Params:'
     echo
-    echo '  [--default          | -e]   Accept the default repository locations '
+    echo '  [--default          | -e]    Accept the default repository locations '
     echo "                               Used for: ${!repos[@]}"
     echo '                               (default is $GITDIR or ~/Documents/GitHub for everything)'
     echo '                               Only used with --test and --dev'
@@ -99,18 +100,21 @@ options () {
             template_file="template.dev.yml"
             compose_override_file="$dev_compose_file"
             container="$project_name""_yvideo_dev_1"
+            service="yvideo_dev"
 
         elif [[ "$opt" = "--production" ]] || [[ "$opt" = "-p" ]];
         then
             template_file="template.production.yml"
             compose_override_file="$production_compose_file"
             container="$project_name""_yvideo_prod_1"
+            service="yvideo_prod"
 
         elif [[ "$opt" = "--beta" ]] || [[ "$opt" = "-b" ]];
         then
             template_file="template.beta.yml"
             compose_override_file="$beta_compose_file"
             container="$project_name""_yvideo_beta_1"
+            service="yvideo_beta"
 
         elif [[ "$opt" = "--travis" ]];
         then
@@ -118,6 +122,7 @@ options () {
             compose_override_file="$test_compose_file"
             container="$project_name""_yvideo_test_1"
             travis=true
+            service="yvideo_test"
 
         elif [[ "$opt" = "--test" ]] || [[ "$opt" = "-t" ]];
         then
@@ -125,10 +130,11 @@ options () {
             compose_override_file="$dev_compose_file"
             container="$project_name""_yvideo_dev_1"
             test_local=true
+            service="yvideo_dev"
 
         elif [[ "$opt" = "--build" ]];
         then
-            build="$opt"
+            build=true
 
         elif [[ "$opt" = "--force-recreate" ]] || [[ "$opt" = "-x" ]];
         then
@@ -356,9 +362,9 @@ configure_lamp () {
     services[production]="master"
     services[beta]="develop"
 
-    for service in "${!services[@]}"; do
+    for srvc in "${!services[@]}"; do
         for repo in "${dependencies_remotes[@]}"; do
-            git clone -b "${services[$service]}" --depth 1 "$repo" lamp/"$service"/$(basename $repo) &> /dev/null
+            git clone -b "${services[$srvc]}" --depth 1 "$repo" lamp/"$srvc"/$(basename $repo) &> /dev/null
         done
     done
 }
@@ -430,13 +436,14 @@ run_docker_compose () {
     echo "Creating Containers..."
 
     if [[ -n $build ]]; then
-        echo "[INFO] - Re-Building All Docker Images."
+        echo "[INFO] - Re-Building the $service Docker Image."
+        build="--no-deps --build $service"
     else
         echo "[INFO] - Using Existing Images if Available."
     fi
 
     # quoting like so: "$build" breaks docker-compose up if it is empty
-    sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d $build $recreate
+    sudo docker-compose -f docker-compose.yml -f "$compose_override_file" up -d $recreate $build
     exit_code="$?"
     [[ -n "$attach" ]] && [[ -n "$container" ]] && sudo docker attach --sig-proxy=false "$container"
 }
