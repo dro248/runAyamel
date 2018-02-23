@@ -184,6 +184,7 @@ options () {
             setup_only=true
         else
             echo "Argument: [$opt] not recognized."
+            exit 1
         fi
     done
 
