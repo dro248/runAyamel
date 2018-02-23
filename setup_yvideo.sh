@@ -54,12 +54,14 @@ usage () {
     echo '  [--setup-only           ]    Will set up all of the specified services but will not run docker-compose.'
     echo "                               Mainly for development and testing of $project_name"
     echo '  [--build                ]    Will rebuild images even if they have not changed.'
-    echo '                               Passes --build to `docker-compose up`'
+    echo '                               Passes --no-deps --build $service to `docker-compose up`'
     echo '                               The way docker-compose responds to --build means that volumes are not deleted.'
     echo '                               This is good but also bad because we want a full reset of the image.'
-    echo '                               So if you need to totally recreate the image without it needing a build according to docker-compose,'
+    echo '                               So if you made changes to volumes that you need reflected in the images,'
     echo '                               then you should delete the images and containers beforehand to ensure everything is up to date.'
     echo '  [--force-recreate   | -x]    Will recreate the containers even if they are up to date.'
+    echo '                               Good for use with --build because docker does not check the code changes in the build image and'
+    echo '                               will therefore not recreate the container.'
     echo '                               Passes --force-recreate to `docker-compose up`'
     echo
     echo
