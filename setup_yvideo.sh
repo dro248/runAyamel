@@ -449,7 +449,10 @@ run_docker_compose () {
 
     if [[ -n $build ]]; then
         echo "[INFO] - Re-Building the $service Docker Image."
-        [[ -n "$no_deps" ]] && echo "[INFO] - Re-building dependencies for $service."
+        if [[ -n "$no_deps" ]]; then
+            echo "[INFO] - Re-building dependencies for $service."
+            $no_deps="--no-deps"
+        fi
         build="$no_deps --build $service"
     else
         echo "[INFO] - Using Existing Images if Available."
