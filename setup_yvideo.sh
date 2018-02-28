@@ -59,6 +59,9 @@ usage () {
     echo '                               This is good but also bad because we want a full reset of the image.'
     echo '                               So if you made changes to volumes that you need reflected in the images,'
     echo '                               then you should delete the images and containers beforehand to ensure everything is up to date.'
+    echo '  [--build-with-deps  |-bd]    Will rebuild images even if they have not changed.'
+    echo '                               Passes --build $service to `docker-compose up`'
+    echo "                               Differs from --build in that it will also rebuild the service's dependencies."
     echo '  [--force-recreate   | -x]    Will recreate the containers even if they are up to date.'
     echo '                               Good for use with --build because docker does not check the code changes in the build image and'
     echo '                               will therefore not recreate the container.'
@@ -137,6 +140,12 @@ options () {
         elif [[ "$opt" = "--build" ]];
         then
             build=true
+            no_deps=true
+
+        elif [[ "$opt" = "--build-with-deps" ]] || [[ "$opt" = "-bd" ]];
+        then
+            build=true
+            no_deps=""
 
         elif [[ "$opt" = "--force-recreate" ]] || [[ "$opt" = "-x" ]];
         then
@@ -440,7 +449,8 @@ run_docker_compose () {
 
     if [[ -n $build ]]; then
         echo "[INFO] - Re-Building the $service Docker Image."
-        build="--no-deps --build $service"
+        [[ -n "$no_deps" ]] && echo "[INFO] - Re-building dependencies for $service."
+        build="$no_deps --build $service"
     else
         echo "[INFO] - Using Existing Images if Available."
     fi
