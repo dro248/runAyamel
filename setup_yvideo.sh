@@ -451,7 +451,7 @@ run_docker_compose () {
         echo "[INFO] - Re-Building the $service Docker Image."
         if [[ -n "$no_deps" ]]; then
             echo "[INFO] - Re-building dependencies for $service."
-            $no_deps="--no-deps"
+            no_deps="--no-deps"
         fi
         build="$no_deps --build $service"
     else
