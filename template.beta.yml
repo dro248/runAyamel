@@ -12,8 +12,8 @@ services:
             dockerfile: Dockerfile
         image: yvideo_beta
         ports:
-         - "9006:9000"
-        command: bash -c "sbt clean stage && target/universal/stage/bin/ayamelexamples"
+         - "9006:9006"
+        command: bash -c "sbt clean stage && target/universal/stage/bin/ayamelexamples -Dhttp.port=9006 -DapplyEvolutions.default=true"
 
     database:
         volumes:
