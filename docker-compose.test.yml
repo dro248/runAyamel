@@ -6,7 +6,19 @@ services:
          - lamp
          - database
         build:
-            context: test
+            context: test/yvideo
+            args:
+                sbt_version: 0.13.8
+            dockerfile: Dockerfile
+        image: yvideo_test
+        command: ["sbt", "test"]
+
+    ylex_test:
+        depends_on:
+         - lamp
+         - database
+        build:
+            context: test/ylex
             args:
                 sbt_version: 0.13.8
             dockerfile: Dockerfile

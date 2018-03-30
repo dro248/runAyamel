@@ -6,14 +6,28 @@ services:
          - lamp
          - database
         build:
-            context: production
+            context: prod/yvideo
             args:
                 sbt_version: 0.13.8
             dockerfile: Dockerfile
         image: yvideo_prod
         ports:
-         - "9001:9001"
-        command: bash -c "sbt clean stage && target/universal/stage/bin/ayamelexamples -Dhttp.port=9001 -DapplyEvolutions.default=true"
+         - "9001:9000"
+        command: bash -c "sbt clean stage && target/universal/stage/bin/ayamelexamples -Dhttp.port=9000 -DapplyEvolutions.default=true"
+
+    ylex_prod:
+        depends_on:
+         - lamp
+         - database
+        build:
+            context: prod/ylex
+            args:
+                sbt_version: 0.13.8
+            dockerfile: Dockerfile
+        image: ylex_prod
+        ports:
+         - "9002:9000"
+        command: bash -c "sbt clean stage && target/universal/stage/bin/dictionary -Dhttp.port=9000 -DapplyEvolutions.default=true"
 
     database:
         volumes:

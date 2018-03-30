@@ -26,13 +26,14 @@ exit_code="0"
 container=""
 
 declare -A repos # Associative array! :) used in the compose_dev function
-repos=([Ayamel]="" [Ayamel.js]="" [EditorWidgets]="" [subtitle-timeline-editor]="" [TimedText]="")
+repos=([Ayamel]="" [Ayamel.js]="" [EditorWidgets]="" [subtitle-timeline-editor]="" [TimedText]="" [ayamel-dictionary-lookup]="")
 ayamel_remote=(https://github.com/byu-odh/Ayamel)
+ylex_remote=(git@github.com:byu-odh/ayamel-dictionary-lookup)
 dependencies_remotes=(https://github.com/byu-odh/Ayamel.js
         https://github.com/byu-odh/EditorWidgets
         https://github.com/byu-odh/subtitle-timeline-editor
         https://github.com/byu-odh/TimedText)
-remotes=("${ayamel_remote[@]}" "${dependencies_remotes[@]}")
+remotes=("${ayamel_remote[@]}" "${dependencies_remotes[@]}" "${ylex_remote[@]}")
 
 usage () {
     echo 'Optional Params:'
@@ -85,8 +86,10 @@ usage () {
     echo '                          Files in this folder should be named <DATABASE_NAME>.sql.'
     echo '                          One database will be created per file and will have the same name as the .sql file.'
     echo '  YVIDEO_SQL_DATA         The folder for the mysql data volume. *Required (Except when using --travis)'
-    echo '  YVIDEO_CONFIG_PROD      The path to the application.conf. *Required only for production'
-    echo '  YVIDEO_CONFIG_BETA      The path to the application.conf for the beta service. *Required only for beta'
+    echo '  YVIDEO_CONFIG_PROD      The path to the yvideo application.conf. *Required only for production'
+    echo '  YVIDEO_CONFIG_BETA      The path to the yvideo application.conf for the beta service. *Required only for beta'
+    echo '  YLEX_CONFIG_PROD        The path to the ylex application.conf. *Required only for production'
+    echo '  YLEX_CONFIG_BETA        The path to the ylex application.conf for the beta service. *Required only for beta'
     echo "  GITDIR                  The path to the yvideo project and all it's dependencies. Used for development. *Not required"
 }
 
@@ -202,6 +205,7 @@ options () {
     if [[ -z "$compose_override_file" ]] && [[ -z "$remove" ]] && [[ -z "$clean" ]]; then
         echo "[Error]: No mode specified"
         echo
+        [[ -n $(which less) ]] && usage | less && exit 1
         usage
         exit 1
     fi
@@ -266,6 +270,7 @@ compose_dev () {
     export subtitle_timeline_editor="${repos[subtitle-timeline-editor]}"
     export EditorWidgets="${repos[EditorWidgets]}"
     export TimedText="${repos[TimedText]}"
+    export DictionaryLookup="${repos[ayamel-dictionary-lookup]}"
     substitute_environment_variables "template.dev.yml" "docker-compose.dev.yml"
 }
 
@@ -288,11 +293,10 @@ compose_test () {
 # does a shallow clone with only 1 commit on the $1 branch for all repositories
 # expects a branchname as an argument
 # The branch should exist on all yvideo repositories
-# clones the repos into the $2 folder
-# $2 should be either production or beta
+# clones the repos into the prod folder
 compose_production () {
 
-    # copy the application.conf file into the context of the dockerfile
+    # copy the application.conf file into the context of the dockerfile for yvideo
     # Needs to be copied because:
     # The <src> path must be inside the context of the build;
     # you cannot COPY ../something /something, because the first step of a docker build
@@ -300,12 +304,24 @@ compose_production () {
     # https://docs.docker.com/engine/reference/builder/#copy
     if [[ -f "$YVIDEO_CONFIG" ]]; then
         # clone the ayamel branch into the production folder
-        git clone -b "$1" --depth 1 "$ayamel_remote" "$2"/$(basename $ayamel_remote) &> /dev/null
+        git clone -b "$1" --depth 1 "$ayamel_remote" prod/$(basename $ayamel_remote) &> /dev/null
         # copy it into the production dockerfile folder
-        cp "$YVIDEO_CONFIG" "$2"/application.conf
+        cp "$YVIDEO_CONFIG" prod/application.conf
     else
         echo "[$YVIDEO_CONFIG] does not exist."
         echo "The environment variable YVIDEO_CONFIG_[BETA | PROD] needs to be exported to this script in order to run yvideo in production mode."
+        exit 1
+    fi
+
+    # copy the application.conf file into the context of the dockerfile for ylex
+    if [[ -f "$YLEX_CONFIG" ]]; then
+        # clone the ylex branch into the ylex folder
+        git clone -b "$1" --depth 1 "$ylex_remote" ylex/DictionaryLookup &> /dev/null
+        # copy the application.conf file into the ylex dockerfile folder
+        cp "$YLEX_CONFIG" ylex/application.conf
+    else
+        echo "[$YLEX_CONFIG] does not exist."
+        echo "The environment variable YLEX_CONFIG_[BETA | PROD] needs to be exported to this script in order to run yvideo in production mode."
         exit 1
     fi
 }
@@ -323,32 +339,38 @@ substitute_environment_variables () {
     cat "$1" | envsubst > "$2"
 }
 
-prod_cleanup () {
-    rm -f docker-compose.production.yml
-    cd production
-    rm -rf Ayamel
+ylex_cleanup() {
+    cd ylex
     rm -f application.conf
     cd ../
 }
 
-beta_cleanup () {
-    rm -f docker-compose.beta.yml
-    cd beta
+# production and beta files are stored in here so 
+# we only need one cleanup
+prod_cleanup () {
+    rm -f docker-compose.production.yml
+    cd prod
+
     rm -rf Ayamel
-    rm -f application.conf*
-    cd ..
+    rm -f application.conf
+
+    ylex_cleanup
+
+    cd ../
 }
 
 dev_cleanup () {
     # This file is the one with the volumes filled in by envsubst
     # so we get rid of the filled out version here
     rm -f docker-compose.dev.yml
+    cd dev/
+    ylex_cleanup
+    cd ../
 }
 
 cleanup () {
     echo "Cleanup..."
     prod_cleanup
-    beta_cleanup
     dev_cleanup
 
     cd db
@@ -430,14 +452,14 @@ setup () {
         compose_dev
     elif [[ "$compose_override_file" = "$production_compose_file" ]]; then
         branchname="master"
-        destination="production"
         YVIDEO_CONFIG="$YVIDEO_CONFIG_PROD"
-        compose_production $branchname $destination
+        YLEX_CONFIG="$YLEX_CONFIG_PROD"
+        compose_production $branchname
     elif [[ "$compose_override_file" = "$beta_compose_file" ]]; then
         branchname="develop"
-        destination="beta"
         YVIDEO_CONFIG="$YVIDEO_CONFIG_BETA"
-        compose_production $branchname $destination
+        YLEX_CONFIG="$YLEX_CONFIG_BETA"
+        compose_production $branchname
     elif [[ "$compose_override_file" = "$test_compose_file" ]]; then
         compose_test
     fi

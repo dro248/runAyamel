@@ -4,12 +4,12 @@ RUN apt-get update
 RUN apt-get install wget
 
 # Copy code into image
-COPY Ayamel /Ayamel/
+COPY DictionaryLookup /DictionaryLookup/
 
 # Copy in the application.conf file
-COPY application.conf /Ayamel/conf/
+COPY application.conf /DictionaryLookup/conf/
 
-WORKDIR /Ayamel
+WORKDIR /DictionaryLookup
 
 # Get sbt
 ARG sbt_version
