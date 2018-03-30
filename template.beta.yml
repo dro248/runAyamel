@@ -6,7 +6,7 @@ services:
          - lamp
          - database
         build:
-            context: prod
+            context: beta/yvideo
             args:
                 sbt_version: 0.13.8
             dockerfile: Dockerfile
@@ -20,7 +20,7 @@ services:
          - lamp
          - database
         build:
-            context: ylex
+            context: beta/ylex
             args:
                 sbt_version: 0.13.8
             dockerfile: Dockerfile

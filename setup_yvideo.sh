@@ -28,7 +28,7 @@ container=""
 declare -A repos # Associative array! :) used in the compose_dev function
 repos=([Ayamel]="" [Ayamel.js]="" [EditorWidgets]="" [subtitle-timeline-editor]="" [TimedText]="" [ayamel-dictionary-lookup]="")
 ayamel_remote=(https://github.com/byu-odh/Ayamel)
-ylex_remote=(git@github.com:byu-odh/ayamel-dictionary-lookup)
+ylex_remote=(https://github.com/byu-odh/ayamel-dictionary-lookup)
 dependencies_remotes=(https://github.com/byu-odh/Ayamel.js
         https://github.com/byu-odh/EditorWidgets
         https://github.com/byu-odh/subtitle-timeline-editor
@@ -294,6 +294,7 @@ compose_test () {
 # expects a branchname as an argument
 # The branch should exist on all yvideo repositories
 # clones the repos into the prod folder
+# $2 is the service mode: production or beta
 compose_production () {
 
     # copy the application.conf file into the context of the dockerfile for yvideo
@@ -304,9 +305,9 @@ compose_production () {
     # https://docs.docker.com/engine/reference/builder/#copy
     if [[ -f "$YVIDEO_CONFIG" ]]; then
         # clone the ayamel branch into the production folder
-        git clone -b "$1" --depth 1 "$ayamel_remote" prod/$(basename $ayamel_remote) &> /dev/null
+        git clone -b "$1" --depth 1 "$ayamel_remote" "$2"/yvideo/$(basename $ayamel_remote) &> /dev/null
         # copy it into the production dockerfile folder
-        cp "$YVIDEO_CONFIG" prod/application.conf
+        cp "$YVIDEO_CONFIG" "$2"/yvideo/application.conf
     else
         echo "[$YVIDEO_CONFIG] does not exist."
         echo "The environment variable YVIDEO_CONFIG_[BETA | PROD] needs to be exported to this script in order to run yvideo in production mode."
@@ -316,9 +317,9 @@ compose_production () {
     # copy the application.conf file into the context of the dockerfile for ylex
     if [[ -f "$YLEX_CONFIG" ]]; then
         # clone the ylex branch into the ylex folder
-        git clone -b "$1" --depth 1 "$ylex_remote" ylex/DictionaryLookup &> /dev/null
+        git clone -b "$1" --depth 1 "$ylex_remote" "$2"/ylex/DictionaryLookup
         # copy the application.conf file into the ylex dockerfile folder
-        cp "$YLEX_CONFIG" ylex/application.conf
+        cp "$YLEX_CONFIG" "$2"/ylex/application.conf
     else
         echo "[$YLEX_CONFIG] does not exist."
         echo "The environment variable YLEX_CONFIG_[BETA | PROD] needs to be exported to this script in order to run yvideo in production mode."
@@ -342,17 +343,19 @@ substitute_environment_variables () {
 ylex_cleanup() {
     cd ylex
     rm -f application.conf
+    rm -rf DictionaryLookup
     cd ../
 }
 
-# production and beta files are stored in here so 
-# we only need one cleanup
+# $1 is the foldername: beta or prod
 prod_cleanup () {
     rm -f docker-compose.production.yml
     cd prod
 
+    cd yvideo
     rm -rf Ayamel
     rm -f application.conf
+    cd ../
 
     ylex_cleanup
 
@@ -370,7 +373,8 @@ dev_cleanup () {
 
 cleanup () {
     echo "Cleanup..."
-    prod_cleanup
+    prod_cleanup "prod"
+    prod_cleanup "beta"
     dev_cleanup
 
     cd db
@@ -454,12 +458,12 @@ setup () {
         branchname="master"
         YVIDEO_CONFIG="$YVIDEO_CONFIG_PROD"
         YLEX_CONFIG="$YLEX_CONFIG_PROD"
-        compose_production $branchname
+        compose_production $branchname "prod"
     elif [[ "$compose_override_file" = "$beta_compose_file" ]]; then
         branchname="develop"
         YVIDEO_CONFIG="$YVIDEO_CONFIG_BETA"
         YLEX_CONFIG="$YLEX_CONFIG_BETA"
-        compose_production $branchname
+        compose_production $branchname "beta"
     elif [[ "$compose_override_file" = "$test_compose_file" ]]; then
         compose_test
     fi
