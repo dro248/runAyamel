@@ -317,7 +317,7 @@ compose_production () {
     # copy the application.conf file into the context of the dockerfile for ylex
     if [[ -f "$YLEX_CONFIG" ]]; then
         # clone the ylex branch into the ylex folder
-        git clone -b "$1" --depth 1 "$ylex_remote" "$2"/ylex/DictionaryLookup
+        git clone -b "$1" --depth 1 "$ylex_remote" "$2"/ylex/DictionaryLookup &> /dev/null
         # copy the application.conf file into the ylex dockerfile folder
         cp "$YLEX_CONFIG" "$2"/ylex/application.conf
     else
@@ -350,7 +350,7 @@ ylex_cleanup() {
 # $1 is the foldername: beta or prod
 prod_cleanup () {
     rm -f docker-compose.production.yml
-    cd prod
+    cd  "$1"
 
     cd yvideo
     rm -rf Ayamel
