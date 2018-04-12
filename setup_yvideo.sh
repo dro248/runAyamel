@@ -251,7 +251,7 @@ docker_compose_down () {
         echo "$0 -[d|p|t|b] --setup-only"
         exit 1
     fi
-    sudo docker-compose -f docker-compose.yml -f "$compose_override_file" down -v --rmi all
+    sudo docker-compose -p $project_name -f docker-compose.yml -f "$compose_override_file" down -v --rmi all
 }
 
 compose_dev () {
@@ -535,12 +535,12 @@ run_docker_compose () {
         fi
         echo "[INFO] - Going to rebuild $rebuild_service"
         # quoting like so: "$service" breaks docker-compose if it is empty
-        sudo docker-compose -p yvideo -f docker-compose.yml -f "$compose_override_file" build --no-cache $service
-        sudo docker-compose -p yvideo -f docker-compose.yml -f "$compose_override_file" up -d $recreate $no_deps $service
+        sudo docker-compose -p $project_name -f docker-compose.yml -f "$compose_override_file" build --no-cache $service
+        sudo docker-compose -p $project_name -f docker-compose.yml -f "$compose_override_file" up -d $recreate $no_deps $service
         exit_code="$?"
     else
         echo "[INFO] - Using Existing Images if Available."
-        sudo docker-compose -p yvideo -f docker-compose.yml -f "$compose_override_file" up -d $recreate
+        sudo docker-compose -p $project_name -f docker-compose.yml -f "$compose_override_file" up -d $recreate
         exit_code="$?"
         [[ -n "$attach" ]] && [[ -n "$container" ]] && sudo docker attach --sig-proxy=false "$container"
     fi
